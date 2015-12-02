@@ -83,6 +83,7 @@ class PlayerViewController: UIViewController {
         playPauseButton.setImage(pauseImage, forState: UIControlState.Selected)
         playPauseButton.addTarget(self, action: "playOrPauseTrack:",
             forControlEvents: UIControlEvents.TouchUpInside)
+        playPauseButton.accessibilityLabel = "Play"
         view.addSubview(playPauseButton)
         
         previousButton = UIButton(type: UIButtonType.Custom)
@@ -93,6 +94,7 @@ class PlayerViewController: UIViewController {
         previousButton.setImage(previousImage, forState: UIControlState.Normal)
         previousButton.addTarget(self, action: "previousTrackTapped:",
             forControlEvents: UIControlEvents.TouchUpInside)
+        previousButton.accessibilityLabel = "Previous Song"
         view.addSubview(previousButton)
 
         nextButton = UIButton(type: UIButtonType.Custom)
@@ -103,6 +105,7 @@ class PlayerViewController: UIViewController {
         nextButton.setImage(nextImage, forState: UIControlState.Normal)
         nextButton.addTarget(self, action: "nextTrackTapped:",
             forControlEvents: UIControlEvents.TouchUpInside)
+        nextButton.accessibilityLabel = "Next Song"
         view.addSubview(nextButton)
 
     }
@@ -129,8 +132,19 @@ class PlayerViewController: UIViewController {
         let clientID = NSDictionary(contentsOfFile: path!)?.valueForKey("client_id") as! String
         let track = tracks[currentIndex]
         let url = NSURL(string: "https://api.soundcloud.com/tracks/\(track.id)/stream?client_id=\(clientID)")!
-        // FILL ME IN
-    
+        
+        let item = AVPlayerItem(URL: url)
+        if(player.currentItem == nil || !player.currentItem!.isEqual(item)) {
+            player.replaceCurrentItemWithPlayerItem(item)
+        }
+        if(sender.selected) {
+            player.pause();
+            playPauseButton.accessibilityLabel = "Play"
+        } else {
+            player.play();
+            playPauseButton.accessibilityLabel = "Pause"
+        }
+        sender.selected = !sender.selected
     }
     
     /* 
@@ -140,7 +154,16 @@ class PlayerViewController: UIViewController {
      * Remember to update the currentIndex
      */
     func nextTrackTapped(sender: UIButton) {
-    
+        if(currentIndex+1 <= tracks.count - 1) {
+            currentIndex = currentIndex+1
+            let url = tracks[currentIndex].getURL()
+            let item = AVPlayerItem(URL: url)
+            player.replaceCurrentItemWithPlayerItem(item)
+            loadTrackElements()
+            if(!playPauseButton.selected) {
+                player.play()
+            }
+        }
     }
 
     /*
@@ -154,7 +177,22 @@ class PlayerViewController: UIViewController {
      */
 
     func previousTrackTapped(sender: UIButton) {
-    
+        if (currentIndex - 1 >= 0) {
+            if(player.currentTime().seconds < 3) {
+                currentIndex = currentIndex - 1
+                let url = tracks[currentIndex].getURL()
+                let item = AVPlayerItem(URL: url)
+                player.replaceCurrentItemWithPlayerItem(item)
+                loadTrackElements()
+                if(!playPauseButton.selected) {
+                    player.play()
+                }
+            } else {
+                player.seekToTime(kCMTimeZero)
+            }
+        } else {
+            player.seekToTime(kCMTimeZero)
+        }
     }
     
     
